@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CHAT-01 — Wireframe Prototype</title>
+<style>
+  :root{
+    --bg:#fafafa; --panel:#ffffff; --ink:#111111; --ink-soft:#555555;
+    --line:#111111; --line-soft:#bbbbbb; --accent:#111111; --chip:#f1f1f1;
+    --agent-bubble:#f0f0f0; --user-bubble:#111111; --user-text:#ffffff;
+    --danger:#b23b3b; --ok:#2f7a3d; --muted:#888888; --card:#ffffff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#151515; --panel:#1c1c1c; --ink:#f2f2f2; --ink-soft:#aaaaaa;
+      --line:#f2f2f2; --line-soft:#444444; --accent:#f2f2f2; --chip:#262626;
+      --agent-bubble:#242424; --user-bubble:#f2f2f2; --user-text:#111111;
+      --danger:#e07a7a; --ok:#7bc98b; --muted:#888888; --card:#1c1c1c;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#151515; --panel:#1c1c1c; --ink:#f2f2f2; --ink-soft:#aaaaaa;
+    --line:#f2f2f2; --line-soft:#444444; --accent:#f2f2f2; --chip:#262626;
+    --agent-bubble:#242424; --user-bubble:#f2f2f2; --user-text:#111111;
+    --danger:#e07a7a; --ok:#7bc98b; --muted:#888888; --card:#1c1c1c;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .topbar{
+    position:sticky; top:0; z-index:20; background:var(--panel);
+    border-bottom:2px solid var(--line);
+    padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .topbar h1{font-size:14px; margin:0; letter-spacing:.2px; font-weight:700;}
+  .topbar .sub{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  .restart{
+    border:1.5px solid var(--line); background:transparent; color:var(--ink);
+    padding:6px 12px; font-size:12px; border-radius:3px; cursor:pointer;
+  }
+  .restart:hover{background:var(--chip);}
+
+  .layout{
+    display:grid; grid-template-columns:220px 1fr; gap:0; max-width:1180px; margin:0 auto;
+    min-height:calc(100% - 54px);
+  }
+  @media (max-width:820px){ .layout{grid-template-columns:1fr;} }
+
+  .flowmap{
+    border-right:1.5px solid var(--line-soft); padding:18px 14px; font-size:12px;
+  }
+  @media (max-width:820px){
+    .flowmap{border-right:none; border-bottom:1.5px solid var(--line-soft);}
+  }
+  .flowmap h2{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0 0 10px;}
+  .flow-group{margin-bottom:16px;}
+  .flow-label{font-size:10.5px; color:var(--muted); margin:0 0 6px; font-style:italic;}
+  .flow-node{
+    display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:3px;
+    cursor:pointer; border:1.5px solid transparent; margin-bottom:2px;
+  }
+  .flow-node:hover{border-color:var(--line-soft);}
+  .flow-node.active{border-color:var(--line); background:var(--chip); font-weight:700;}
+  .flow-node .num{
+    width:20px; height:20px; border:1.5px solid var(--line); border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0;
+  }
+  .flow-node.active .num{background:var(--ink); color:var(--bg);}
+  .flow-arrow{color:var(--muted); font-size:11px; margin-left:9px; margin-bottom:4px;}
+
+  .stage{padding:22px 16px 60px; display:flex; justify-content:center;}
+  .phone{
+    width:100%; max-width:420px; border:2px solid var(--line); border-radius:10px;
+    overflow:hidden; background:var(--panel); display:flex; flex-direction:column;
+    min-height:640px;
+  }
+  .phone-head{
+    border-bottom:1.5px solid var(--line); padding:12px 14px; display:flex; align-items:center; gap:8px;
+  }
+  .frame-tag{
+    font-size:10px; border:1px solid var(--line); border-radius:3px; padding:1px 6px; color:var(--ink-soft);
+  }
+  .phone-head strong{font-size:13.5px;}
+  .phone-head .tag{
+    font-size:9.5px; border:1px solid var(--line-soft); border-radius:10px; padding:1px 7px; color:var(--ink-soft);
+  }
+  .phone-body{flex:1; padding:14px; overflow-y:auto;}
+  .phone-foot{border-top:1.5px solid var(--line); padding:10px 12px; display:flex; gap:8px; align-items:center;}
+  .phone-foot input{
+    flex:1; border:1.5px solid var(--line-soft); border-radius:16px; padding:8px 12px; font-size:12.5px;
+    background:transparent; color:var(--ink);
+  }
+  .phone-foot .send{border:1.5px solid var(--line); border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:13px;}
+
+  /* Chat list frame */
+  .chat-row{display:flex; gap:10px; padding:10px 4px; border-bottom:1px solid var(--line-soft); cursor:pointer; border-radius:4px;}
+  .chat-row:hover{background:var(--chip);}
+  .avatar{width:34px; height:34px; border:1.5px solid var(--line); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0;}
+  .chat-row .name-line{display:flex; align-items:center; gap:6px;}
+  .chat-row .name{font-size:13px; font-weight:700;}
+  .chat-row .badge{font-size:9px; border:1px solid var(--line); border-radius:3px; padding:0 5px; color:var(--ink-soft);}
+  .chat-row .preview{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  .pin{margin-left:auto; font-size:10px; color:var(--muted);}
+  .empty-right{display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12.5px;}
+
+  /* Suggestion chips / empty state */
+  .agent-hero{text-align:center; padding:26px 6px 18px;}
+  .agent-hero .icon{font-size:34px;}
+  .agent-hero h3{font-size:15px; margin:8px 0 4px;}
+  .agent-hero p{font-size:12px; color:var(--ink-soft); max-width:280px; margin:0 auto;}
+  .chip{
+    border:1.5px solid var(--line); border-radius:6px; padding:10px 12px; font-size:12.5px;
+    margin-bottom:9px; cursor:pointer; background:var(--panel);
+  }
+  .chip:hover{background:var(--chip);}
+  .nav-hint{font-size:10px; color:var(--muted); margin-top:2px; margin-bottom:12px; padding-left:2px;}
+
+  /* Bubbles */
+  .bubble-row{display:flex; margin-bottom:10px;}
+  .bubble-row.user{justify-content:flex-end;}
+  .bubble{
+    max-width:82%; padding:9px 12px; border-radius:10px; font-size:12.5px; line-height:1.4;
+  }
+  .bubble.agent{background:var(--agent-bubble); border:1px solid var(--line-soft); border-bottom-left-radius:2px;}
+  .bubble.user{background:var(--user-bubble); color:var(--user-text); border-bottom-right-radius:2px;}
+  .agent-label{font-size:10px; color:var(--muted); margin:8px 0 4px;}
+
+  /* Cards */
+  .card{border:1.5px solid var(--line); border-radius:8px; padding:12px 13px; margin-bottom:12px; background:var(--card);}
+  .card.dim{opacity:.4;}
+  .card-title{font-size:11px; font-weight:700; letter-spacing:.03em; margin-bottom:8px; display:flex; align-items:center; gap:6px;}
+  .card ul{margin:0; padding-left:16px; font-size:12px; line-height:1.6;}
+  .card .meta{font-size:10.5px; color:var(--muted); margin-top:8px; border-top:1px dashed var(--line-soft); padding-top:6px;}
+  .field{margin-bottom:8px;}
+  .field .k{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em;}
+  .field .v{font-size:12.5px; margin-top:1px;}
+  .field input, .field select{
+    width:100%; border:1.5px solid var(--line-soft); border-radius:4px; padding:6px 8px; font-size:12.5px;
+    background:transparent; color:var(--ink); margin-top:2px;
+  }
+  .quote-box{border:1px dashed var(--line-soft); border-radius:5px; padding:7px 9px; font-size:11.5px; color:var(--ink-soft); font-style:italic; margin-top:4px;}
+
+  .btn-row{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .btn{
+    border:1.5px solid var(--line); border-radius:5px; padding:7px 13px; font-size:12px; cursor:pointer;
+    background:transparent; color:var(--ink);
+  }
+  .btn:hover{background:var(--chip);}
+  .btn.primary{background:var(--ink); color:var(--bg); border-color:var(--ink);}
+  .btn.primary:hover{opacity:.85;}
+  .btn.danger{border-color:var(--danger); color:var(--danger);}
+  .btn.small{padding:5px 10px; font-size:11px;}
+
+  .anno{font-size:9.5px; color:var(--muted); margin-top:3px;}
+
+  .task-item{display:flex; align-items:flex-start; gap:8px; padding:7px 0; border-bottom:1px solid var(--line-soft); cursor:pointer;}
+  .task-item:last-child{border-bottom:none;}
+  .task-item:hover{background:var(--chip);}
+  .task-item .box{width:14px; height:14px; border:1.5px solid var(--line); border-radius:3px; margin-top:2px; flex-shrink:0;}
+  .task-item .t-time{font-size:11px; color:var(--muted); width:40px; flex-shrink:0;}
+  .task-item .t-name{font-size:12.5px;}
+  .task-item .t-proj{font-size:10.5px; color:var(--muted);}
+  .flag{font-size:9.5px; color:var(--danger); border:1px solid var(--danger); border-radius:3px; padding:0 4px; margin-left:6px;}
+
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line-soft); font-size:12.5px;}
+  .toggle-row:last-child{border-bottom:none;}
+  .toggle{
+    width:34px; height:18px; border:1.5px solid var(--line); border-radius:10px; position:relative; cursor:pointer; flex-shrink:0;
+  }
+  .toggle .dot{position:absolute; top:1px; width:12px; height:12px; border-radius:50%; background:var(--ink); transition:left .15s;}
+  .toggle.on .dot{left:17px;}
+  .toggle.off .dot{left:1px; background:var(--muted);}
+  .sec-h{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:14px 0 6px;}
+  .sec-h:first-child{margin-top:0;}
+
+  .toast{
+    font-size:11px; border:1px solid var(--line-soft); border-radius:5px; padding:6px 10px; color:var(--ink-soft);
+    margin-top:8px; display:inline-block;
+  }
+  .back-link{font-size:12px; color:var(--ink-soft); cursor:pointer; display:flex; align-items:center; gap:5px; margin-bottom:4px;}
+  .back-link:hover{color:var(--ink);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>CHAT-01 — AI Agent Trợ lý cá nhân trong Chat</h1>
+    <div class="sub">Wireframe Prototype — bấm vào nút trong màn hình để điều hướng, đúng như hành vi thật</div>
+  </div>
+  <button class="restart" onclick="restart()">↺ Restart flow</button>
+</div>
+
+<div class="layout">
+  <div class="flowmap" id="flowmap"></div>
+  <div class="stage"><div class="phone" id="phone"></div></div>
+</div>
+
+<script>
+const state = {
+  screen: 's01',
+  editMode: false,
+  editSource: 's04',
+  taskIgnored: false,
+  clarifyTime: null,
+  clarifyConfirmed: false,
+  reminderDeleted: false,
+};
+
+const MAIN_FLOW = [
+  {id:'s01', num:'01', label:'Chat List'},
+  {id:'s02', num:'02', label:'AI Chat Home'},
+  {id:'s03', num:'03', label:'Summary + Task'},
+  {id:'s04', num:'04', label:'Confirm Task'},
+  {id:'s06', num:'06', label:'Reminder Created'},
+];
+const ALT_FLOW = [
+  {id:'sTaskList', num:'—', label:'Today Task List'},
+  {id:'s05', num:'05', label:'Need Clarify'},
+];
+const SIDE = [
+  {id:'s07', num:'07', label:'Agent Settings'},
+];
+
+function go(screen){
+  state.screen = screen;
+  render();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function restart(){
+  Object.assign(state, {screen:'s01', editMode:false, taskIgnored:false, clarifyTime:null, clarifyConfirmed:false, reminderDeleted:false});
+  render();
+}
+function ignoreTask(){ state.taskIgnored = true; go('s03'); }
+function unignoreTask(){ state.taskIgnored = false; render(); }
+function openEdit(from){ state.editMode = true; state.editSource = from; state.screen='s04'; render(); }
+function saveEdit(){ state.editMode = false; render(); }
+function pickTime(t){ state.clarifyTime = t; state.clarifyConfirmed = false; render(); }
+function clarifyGoConfirm(){ go('s04'); }
+function deleteReminder(){ state.reminderDeleted = true; render(); }
+function restoreReminder(){ state.reminderDeleted = false; render(); }
+
+function flowMapHTML(){
+  function node(f){
+    const active = state.screen === f.id ? 'active' : '';
+    return `<div class="flow-node ${active}" onclick="go('${f.id}')">
+      <span class="num">${f.num}</span><span>${f.label}</span>
+    </div>`;
+  }
+  let html = `<h2>Sơ đồ luồng</h2>`;
+  html += `<div class="flow-group"><div class="flow-label">Main happy flow</div>`;
+  html += MAIN_FLOW.map(node).join('<div class="flow-arrow">↓</div>');
+  html += `</div>`;
+  html += `<div class="flow-group"><div class="flow-label">Alternative flow (03 → ⋯ → 04)</div>`;
+  html += ALT_FLOW.map(node).join('<div class="flow-arrow">↓</div>');
+  html += `</div>`;
+  html += `<div class="flow-group"><div class="flow-label">Màn hình phụ</div>`;
+  html += SIDE.map(node).join('');
+  html += `</div>`;
+  html += `<div class="flow-group" style="font-size:10.5px;color:var(--muted);border-top:1px dashed var(--line-soft);padding-top:10px;">
+    Click trực tiếp vào tên frame ở đây để nhảy nhanh, hoặc bấm nút trong màn hình bên phải để đi theo đúng luồng thật.
+  </div>`;
+  return html;
+}
+
+function head(tag, title, badge){
+  return `<div class="phone-head">
+    <span class="frame-tag">${tag}</span>
+    <strong>${title}</strong>
+    ${badge ? `<span class="tag">${badge}</span>` : ''}
+  </div>`;
+}
+function foot(placeholder){
+  return `<div class="phone-foot">
+    <span style="font-size:16px;">+</span>
+    <input placeholder="${placeholder}" readonly>
+    <div class="send">➤</div>
+  </div>`;
+}
+
+function s01(){
+  return `
+  ${head('Frame 01','Chats')}
+  <div class="phone-body">
+    <div class="chat-row" onclick="go('s02')">
+      <div class="avatar">🤖</div>
+      <div>
+        <div class="name-line"><span class="name">AI Assistant</span><span class="badge">AI Agent</span></div>
+        <div class="preview">Bạn có 2 task chưa xử lý...</div>
+      </div>
+      <div class="pin">📌 ghim</div>
+    </div>
+    <div class="anno">↑ Click vào dòng này → đi tới Frame 02</div>
+    <div class="chat-row"><div class="avatar">👤</div><div><div class="name">Minh</div><div class="preview">Mai gửi slide...</div></div></div>
+    <div class="chat-row"><div class="avatar">👥</div><div><div class="name">Nhóm DEV 1</div><div class="preview">Đã fix xong bug...</div></div></div>
+    <div class="chat-row"><div class="avatar">👥</div><div><div class="name">Nhóm BA</div><div class="preview">Spec cần chốt trước...</div></div></div>
+  </div>`;
+}
+
+function s02(){
+  return `
+  ${head('Frame 02','AI Assistant', 'AI Agent')}
+  <div class="phone-body">
+    <div class="back-link" onclick="go('s01')">← Chat List</div>
+    <div class="agent-hero">
+      <div class="icon">🤖</div>
+      <h3>AI Assistant</h3>
+      <p>Tôi có thể giúp bạn theo dõi các cuộc hội thoại được cho phép.</p>
+    </div>
+    <div class="chip" onclick="go('s03')">✨ Tóm tắt Nhóm DEV 1</div>
+    <div class="nav-hint">→ đi tới Frame 03</div>
+    <div class="chip" onclick="go('sTaskList')">📌 Tôi có task nào hôm nay?</div>
+    <div class="nav-hint">→ đi tới Today Task List</div>
+    <div class="chip" onclick="go('s03')">📅 Có lịch hẹn nào mới không?</div>
+    <div class="nav-hint">→ đi tới Frame 03</div>
+  </div>
+  ${foot('Nhắn tin cho AI Assistant...')}
+  <div style="position:absolute; top:10px; right:14px;"></div>
+  <div class="anno" style="padding:0 14px 10px; text-align:right; cursor:pointer;" onclick="go('s07')">⋮ Agent Settings → Frame 07</div>`;
+}
+
+function s03(){
+  const cardCls = state.taskIgnored ? 'card dim' : 'card';
+  return `
+  ${head('Frame 03','AI Assistant')}
+  <div class="phone-body">
+    <div class="back-link" onclick="go('s02')">← AI Assistant</div>
+    <div class="bubble-row user"><div class="bubble user">Tóm tắt Nhóm DEV 1 từ sáng đến giờ.</div></div>
+    <div class="agent-label">🤖 AI Assistant</div>
+    <div class="card">
+      <div class="card-title">✨ NHÓM DEV 1 — SUMMARY</div>
+      <ul>
+        <li>Backend đã deploy API version mới.</li>
+        <li>Minh yêu cầu bạn gửi slide demo vào 20:00 ngày mai.</li>
+        <li>Cuộc họp demo dự kiến diễn ra thứ Ba.</li>
+      </ul>
+      <div class="meta">24 messages analyzed</div>
+    </div>
+    <div class="agent-label">🤖 Tôi cũng phát hiện 1 việc cần làm.</div>
+    <div class="${cardCls}">
+      <div class="card-title">📌 TASK DETECTED</div>
+      <div class="field"><div class="v">Gửi slide demo cho Minh</div></div>
+      <div class="field"><div class="k">Deadline</div><div class="v">📅 Tomorrow · 🕗 20:00</div></div>
+      <div class="field"><div class="k">Source</div><div class="v">Nhóm DEV 1</div></div>
+      ${state.taskIgnored
+        ? `<div class="toast">Đã bỏ qua task này. <span style="text-decoration:underline;cursor:pointer;" onclick="unignoreTask()">Hoàn tác</span></div>`
+        : `<div class="btn-row"><button class="btn primary" onclick="go('s04')">Xem chi tiết</button></div>
+           <div class="anno">→ đi tới Frame 04</div>`
+      }
+    </div>
+  </div>
+  ${foot('Nhắn tin...')}`;
+}
+
+function s04(){
+  if(state.editMode){
+    return `
+    ${head('Frame 04','AI Assistant')}
+    <div class="phone-body">
+      <div class="back-link" onclick="saveEdit()">← Huỷ chỉnh sửa</div>
+      <div class="agent-label">🤖 Chỉnh sửa task</div>
+      <div class="card">
+        <div class="card-title">✏️ EDIT TASK</div>
+        <div class="field"><div class="k">Task</div><input value="Gửi slide demo cho Minh"></div>
+        <div class="field"><div class="k">Ngày</div><input value="Tomorrow"></div>
+        <div class="field"><div class="k">Giờ</div><input value="20:00"></div>
+        <div class="field"><div class="k">Reminder</div><input value="30 minutes before"></div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="saveEdit()">Lưu thay đổi</button>
+          <button class="btn" onclick="saveEdit()">Huỷ</button>
+        </div>
+        <div class="anno">→ Lưu xong quay lại Frame 04</div>
+      </div>
+    </div>
+    ${foot('Nhắn tin...')}`;
+  }
+  return `
+  ${head('Frame 04','AI Assistant')}
+  <div class="phone-body">
+    <div class="back-link" onclick="go(state.editSource==='s05' ? 's05' : 's03')">← Quay lại</div>
+    <div class="agent-label">🤖 Tôi hiểu yêu cầu này như sau:</div>
+    <div class="card">
+      <div class="card-title">📌 NEW TASK</div>
+      <div class="field"><div class="k">Task</div><div class="v">Gửi slide demo cho Minh</div></div>
+      <div class="field"><div class="k">Deadline</div><div class="v">Tomorrow, ${state.clarifyTime || '20:00'}</div></div>
+      <div class="field"><div class="k">Reminder</div><div class="v">30 minutes before</div></div>
+      <div class="field">
+        <div class="k">Source</div>
+        <div class="quote-box">Minh: "Mai ${state.clarifyTime || '8h tối'} gửi slide cho anh nhé."</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="go('s06')">✓ Confirm</button>
+        <button class="btn" onclick="openEdit('s04')">Edit</button>
+        <button class="btn danger" onclick="ignoreTask()">Ignore</button>
+      </div>
+      <div class="anno">Confirm → Frame 06 &nbsp;·&nbsp; Edit → form chỉnh sửa &nbsp;·&nbsp; Ignore → Frame 03</div>
+    </div>
+  </div>
+  ${foot('Nhắn tin...')}`;
+}
+
+function sTaskList(){
+  return `
+  ${head('Today','Task List')}
+  <div class="phone-body">
+    <div class="back-link" onclick="go('s02')">← AI Assistant</div>
+    <div class="agent-label">🤖 Bạn có 3 việc hôm nay:</div>
+    <div class="card">
+      <div class="card-title">TODAY</div>
+      <div class="task-item"><div class="box"></div><div><div class="t-time">10:00</div></div><div><div class="t-name">Review document</div><div class="t-proj">Nhóm BA</div></div></div>
+      <div class="task-item" onclick="go('s05')">
+        <div class="box"></div>
+        <div><div class="t-time">Chiều mai</div></div>
+        <div><div class="t-name">Gửi báo cáo cho Minh <span class="flag">? giờ</span></div><div class="t-proj">Nhóm DEV 1</div></div>
+      </div>
+      <div class="anno" style="margin-left:22px;">↑ Task này thiếu thông tin → click để đi tới Frame 05</div>
+      <div class="task-item"><div class="box"></div><div><div class="t-time">20:00</div></div><div><div class="t-name">Send slide to Minh</div><div class="t-proj">Nhóm DEV 1</div></div></div>
+      <div class="meta">3 tasks • 0 completed</div>
+    </div>
+  </div>
+  ${foot('Nhắn tin...')}`;
+}
+
+function s05(){
+  const picked = state.clarifyTime && state.screen==='s05';
+  return `
+  ${head('Frame 05','AI Assistant', 'Alt flow')}
+  <div class="phone-body">
+    <div class="back-link" onclick="go('sTaskList')">← Task List</div>
+    <div class="bubble-row user"><div class="bubble user">Tôi còn task nào chưa xử lý?</div></div>
+    <div class="agent-label">🤖 Tôi tìm thấy một task nhưng thời gian chưa rõ.</div>
+    <div class="card">
+      <div class="card-title">❓ NEED CLARIFICATION</div>
+      <div class="field"><div class="v">Gửi báo cáo cho Minh</div></div>
+      <div class="field"><div class="k">Deadline</div><div class="v">📅 Tomorrow · 🕗 ${state.clarifyTime ? state.clarifyTime : 'Not specified'}</div></div>
+      <div class="field"><div class="k">Source</div><div class="quote-box">"Chiều mai gửi báo cáo cho anh nhé."</div></div>
+      ${!picked ? `
+        <div class="field"><div class="v">Bạn muốn đặt deadline lúc nào?</div></div>
+        <div class="btn-row">
+          <button class="btn" onclick="pickTime('14:00')">14:00</button>
+          <button class="btn" onclick="pickTime('16:00')">16:00</button>
+          <button class="btn" onclick="pickTime('16:30')">Chọn giờ khác</button>
+        </div>
+        <div class="anno">Chọn giờ → cập nhật ngay tại đây, hiện nút Confirm</div>
+      ` : `
+        <div class="toast">Được, tôi sẽ đặt deadline lúc ${state.clarifyTime}.</div>
+        <div class="btn-row"><button class="btn primary" onclick="clarifyGoConfirm()">Confirm</button></div>
+        <div class="anno">→ đi tới Frame 04 (giờ đã đủ thông tin)</div>
+      `}
+    </div>
+  </div>
+  ${foot('Nhắn tin...')}`;
+}
+
+function s06(){
+  return `
+  ${head('Frame 06','AI Assistant')}
+  <div class="phone-body">
+    <div class="back-link" onclick="go('s02')">← AI Assistant</div>
+    <div class="agent-label">🤖 ✅ Reminder đã được tạo.</div>
+    <div class="card ${state.reminderDeleted ? 'dim' : ''}">
+      <div class="card-title">🔔 REMINDER</div>
+      <div class="field"><div class="v">Gửi slide demo cho Minh</div></div>
+      <div class="field"><div class="k">Nhắc lúc</div><div class="v">📅 Tomorrow · 🕢 19:30</div></div>
+      <div class="field"><div class="k">Deadline</div><div class="v">20:00</div></div>
+      <div class="field"><div class="k">Source</div><div class="v">Nhóm DEV 1</div></div>
+      ${state.reminderDeleted
+        ? `<div class="toast">Reminder đã bị xoá. <span style="text-decoration:underline;cursor:pointer;" onclick="restoreReminder()">Hoàn tác</span></div>`
+        : `<div class="btn-row">
+            <button class="btn" onclick="openEdit('s06')">Edit</button>
+            <button class="btn danger" onclick="deleteReminder()">Delete</button>
+           </div>
+           <div class="anno">Edit → mở lại form chỉnh sửa &nbsp;·&nbsp; Delete → xoá reminder</div>`
+      }
+    </div>
+    <div class="agent-label" style="margin-top:14px;">🤖 Bạn còn muốn tôi kiểm tra task nào khác không?</div>
+  </div>
+  ${foot('Nhắn tin...')}`;
+}
+
+function s07(){
+  const rows = [
+    ['Nhóm DEV 1', true], ['Nhóm BA', true], ['Nhóm Tester', false], ['Private chat với Minh', false]
+  ];
+  const perms = ['Summarize conversations', 'Detect tasks', 'Detect meetings'];
+  return `
+  ${head('Frame 07','Agent Settings')}
+  <div class="phone-body">
+    <div class="back-link" onclick="go('s02')">← đi tới Frame 02</div>
+    <div class="sec-h">Conversation access</div>
+    ${rows.map(r=>`<div class="toggle-row"><span>${r[0]}</span><div class="toggle ${r[1]?'on':'off'}"><div class="dot"></div></div></div>`).join('')}
+    <div class="sec-h">Agent permissions</div>
+    ${perms.map(p=>`<div class="toggle-row"><span>✓ ${p}</span></div>`).join('')}
+    <div class="sec-h">Reminder creation</div>
+    <div class="toggle-row"><span>Always ask before creating</span><div class="toggle on"><div class="dot"></div></div></div>
+  </div>`;
+}
+
+const RENDERERS = {s01,s02,s03,s04,s05,s06,s07,sTaskList};
+
+function render(){
+  document.getElementById('phone').innerHTML = RENDERERS[state.screen]();
+  document.getElementById('flowmap').innerHTML = flowMapHTML();
+}
+render();
+</script>
+</body>
+</html>
